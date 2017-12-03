@@ -20,6 +20,27 @@ main = do
   content <- readFile $ args !! 0
   putStrLn $ show $ day2pt2 content
 
+
+-- day 3
+day3input = 289326
+
+lvl 0 = [(0, 0)] ++ lvl 1
+lvl x =
+  zip (repeat x) ascender
+  ++ zip descender (repeat x)
+  ++ zip (repeat (-x)) descender
+  ++ zip ascender (repeat (-x))
+  ++ lvl (x + 1) where
+  ascender = [(-x + 1) .. x]
+  descender = reverse [-x .. x - 1]
+
+spiral = lvl 0
+
+coord = lvl 0 !! (day3input - 1)
+
+day3pt1 cell = (abs x) + (abs y) where
+  (x, y) = lvl 0 !! (cell - 1)
+
 -- day 2
 
 rows :: String -> [[Integer]]
