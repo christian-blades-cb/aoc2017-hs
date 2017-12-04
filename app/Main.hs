@@ -29,24 +29,35 @@ main = do
   putStrLn "day4pt1"
   day4content <- readFile "day4-input"
   putStrLn $ show $ day4pt1 day4content
+  putStrLn "day4pt2"
+  putStrLn $ show $ day4pt2 day4content
 
 -- day 4
-passphraseValid :: [String] -> Bool
-passphraseValid [] = False
-passphraseValid [_] = True
-passphraseValid xs = notPresentLater && (passphraseValid $ tail xs)
+noDuplicateWords :: [String] -> Bool
+noDuplicateWords [] = True
+noDuplicateWords [_] = True
+noDuplicateWords xs = notPresentLater && (noDuplicateWords $ tail xs)
   where
     current = head xs
     later = tail xs
     notPresentLater = all ((/=) current) later
 
-validPhrases :: [[String]] -> Integer
-validPhrases xs = foldr (\ a b -> (conv . passphraseValid $ a) + b ) 0 xs
+noAnagrams :: [String] -> Bool
+noAnagrams [] = True
+noAnagrams [_] = True
+noAnagrams xs = lack && (noAnagrams $ tail xs)
+  where
+    current = sort $ head xs
+    later = map sort $ tail xs
+    lack = all ((/=) current) later
+
+conformingToPolicy policy xs = foldr (\ a b -> (conv $ policy a) + b ) 0 xs
   where
     conv x | x == True = 1
            | x == False = 0
 
-day4pt1 = validPhrases . map words . lines
+day4pt1 = conformingToPolicy noDuplicateWords . map words . lines
+day4pt2 = conformingToPolicy noAnagrams . map words . lines
 
 -- day 3
 day3input = 289326
