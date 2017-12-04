@@ -24,6 +24,8 @@ main = do
   -- day3
   putStrLn "day3pt1"
   putStrLn $ show $ day3pt1 day3input
+  putStrLn "day3pt2"
+  putStrLn $ show $ day3pt2 $ toInteger day3input
 
   -- day 4
   putStrLn "day4pt1"
@@ -73,12 +75,37 @@ lvl x =
   descender = reverse [-x .. x - 1]
 
 data CoordVal where
-  CV :: (Integer, Integer) -> Maybe Integer -> CoordVal
+  CV :: (Integer, Integer) -> Integer -> CoordVal
+    deriving Show
 
-spiral = map (\ (x, y) -> CV (x, y) Nothing) $ lvl 0
+adjacentCoords :: (Integer, Integer) -> [(Integer, Integer)]
+adjacentCoords (x, y) = (x+1, y) : (x+1, y+1) : (x+1, y-1) : (x-1, y) : (x-1, y+1) : (x-1, y-1) : (x, y+1) : (x, y-1) : []
+
+isAdjacent :: CoordVal -> CoordVal -> Bool
+isAdjacent (CV origin _) (CV xcoord _) = flip any (adjacentCoords origin) ((==) xcoord)
+
+sumAdjacent :: CoordVal -> [CoordVal] -> Integer
+sumAdjacent (CV origin _) [] = 1
+sumAdjacent (CV origin _) [x] = v x
+  where
+    v (CV _ y) = y
+sumAdjacent origin xs = sum . (map cval) $ filter (isAdjacent origin) xs
+  where
+    cval (CV _ v) = v
+
+buildCoordVal :: CoordVal -> [CoordVal] -> CoordVal
+buildCoordVal (CV (x, y) _) xs = CV (x, y) (sumAdjacent (CV (x, y) 0) xs)
+
+buildValSpiral :: [CoordVal] -> [(Integer, Integer)] -> [CoordVal]
+buildValSpiral acc xs = thisVal : buildValSpiral (acc ++ [thisVal]) (tail xs)
+  where
+    thisVal = CV (head xs) (sumAdjacent (CV (head xs) 0) acc)
+-- buildValSpiral = foldl (\ acc b -> (:) (buildCoordVal b acc) acc) [] $ map (\(x, y) -> CV (x, y) 0) (lvl 0)
 
 day3pt1 cell = (abs x) + (abs y) where
   (x, y) = lvl 0 !! (cell - 1)
+
+day3pt2 input = find (\ (CV _ x) -> x > input) $ buildValSpiral [] (lvl 0)
 
 -- day 2
 
