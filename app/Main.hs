@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTSyntax #-}
 module Main where
 
 import Lib
@@ -13,13 +14,39 @@ main = do
   putStrLn . show $ day1pt1 dayOneInput
   putStrLn "day1pt2"
   putStrLn . show $ day1pt2 dayOneInput
-  
+
   -- day2
   putStrLn "day2pt2"
   args <- getArgs
-  content <- readFile $ args !! 0
+  content <- readFile $ "day2-input"
   putStrLn $ show $ day2pt2 content
 
+  -- day3
+  putStrLn "day3pt1"
+  putStrLn $ show $ day3pt1 day3input
+
+  -- day 4
+  putStrLn "day4pt1"
+  day4content <- readFile "day4-input"
+  putStrLn $ show $ day4pt1 day4content
+
+-- day 4
+passphraseValid :: [String] -> Bool
+passphraseValid [] = False
+passphraseValid [_] = True
+passphraseValid xs = notPresentLater && (passphraseValid $ tail xs)
+  where
+    current = head xs
+    later = tail xs
+    notPresentLater = all ((/=) current) later
+
+validPhrases :: [[String]] -> Integer
+validPhrases xs = foldr (\ a b -> (conv . passphraseValid $ a) + b ) 0 xs
+  where
+    conv x | x == True = 1
+           | x == False = 0
+
+day4pt1 = validPhrases . map words . lines
 
 -- day 3
 day3input = 289326
@@ -34,9 +61,10 @@ lvl x =
   ascender = [(-x + 1) .. x]
   descender = reverse [-x .. x - 1]
 
-spiral = lvl 0
+data CoordVal where
+  CV :: (Integer, Integer) -> Maybe Integer -> CoordVal
 
-coord = lvl 0 !! (day3input - 1)
+spiral = map (\ (x, y) -> CV (x, y) Nothing) $ lvl 0
 
 day3pt1 cell = (abs x) + (abs y) where
   (x, y) = lvl 0 !! (cell - 1)
@@ -61,7 +89,7 @@ divRows :: [Integer] -> Integer
 divRows xs = div (fst evdiv) (snd evdiv) where
   evdiv = head (catMaybes $ evenDivs xs)
 
-day2pt2 = sum . map divRows . rows 
+day2pt2 = sum . map divRows . rows
 
 -- day 1
 
@@ -76,7 +104,7 @@ pairs x = zip x (toList . rotR $ fromList x)
 matchedPairs :: Eq x => [(x, x)] -> [(x, x)]
 matchedPairs = filter (\ (x, y) -> x == y)
 
-matchedDigits = map (\ (x, _) -> x) 
+matchedDigits = map (\ (x, _) -> x)
 
 day1pt1 :: Integral a => a -> a
 day1pt1 = sum . matchedDigits . matchedPairs . pairs . digs
