@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTSyntax #-}
 module Main where
 
 import Lib
@@ -20,6 +21,31 @@ main = do
   content <- readFile $ args !! 0
   putStrLn $ show $ day2pt2 content
 
+  -- day3
+  putStrLn "day3pt1"
+  putStrLn $ show $ day3pt1 day3input
+
+  -- day 4
+  putStrLn "day4pt1"
+  day4content <- readFile "day4-input"
+  putStrLn $ show $ day4pt1 day4content
+  
+-- day 4
+passphraseValid :: [String] -> Bool
+passphraseValid [] = False
+passphraseValid xs = notPresentLater && (passphraseValid $ tail xs)
+  where
+    current = head xs
+    later = tail xs
+    notPresentLater = all ((/=) current) later
+
+validPhrases :: [[String]] -> Integer
+validPhrases xs = foldr (\ a b -> (conv . passphraseValid $ a) + b ) 0 xs
+  where
+    conv x | x == True = 1
+           | x == False = 0
+
+day4pt1 = validPhrases . map words . lines
 
 -- day 3
 day3input = 289326
@@ -34,9 +60,10 @@ lvl x =
   ascender = [(-x + 1) .. x]
   descender = reverse [-x .. x - 1]
 
-spiral = lvl 0
+data CoordVal where
+  CV :: (Integer, Integer) -> Maybe Integer -> CoordVal
 
-coord = lvl 0 !! (day3input - 1)
+spiral = map (\ (x, y) -> CV (x, y) Nothing) $ lvl 0
 
 day3pt1 cell = (abs x) + (abs y) where
   (x, y) = lvl 0 !! (cell - 1)
