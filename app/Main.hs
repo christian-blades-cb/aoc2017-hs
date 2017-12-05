@@ -6,6 +6,7 @@ import Data.CircularList
 import System.Environment
 import Data.List
 import Data.Maybe
+import Control.Lens
 
 main :: IO ()
 main = do
@@ -33,6 +34,37 @@ main = do
   putStrLn $ show $ day4pt1 day4content
   putStrLn "day4pt2"
   putStrLn $ show $ day4pt2 day4content
+
+  -- day5
+  putStrLn "day5pt1"
+  day5content <- readFile "day5-input"
+--  putStrLn $ show $ day5pt1 day5content
+  putStrLn "day5pt2"
+  putStrLn $ show $ day5pt2 day5content
+
+-- day 5
+stack :: String -> [Int]
+stack = map read . lines 
+
+jump :: Int -> [Int] -> [Int]
+jump i xs | i >= (length xs) = []
+          | otherwise = i : jump (nextI) (doIncr)
+            where
+              nextI = i + (xs !! i)
+              doIncr = (element i .~ ((xs !! i) + 1)) xs
+
+jump' i xs | i >= (length xs) = []
+           | otherwise = i : jump' nextI doIncr
+             where
+               offset = (xs !! i)
+               nextI = i + offset
+               doIncr | offset >= 3 = (element i .~ (offset - 1)) xs
+                      | otherwise = (element i .~ (offset + 1)) xs
+
+day5pt1 :: String -> Int
+day5pt1 = length . jump 0 . stack
+
+day5pt2 = length . jump' 0 . stack
 
 -- day 4
 noDuplicateWords :: [String] -> Bool

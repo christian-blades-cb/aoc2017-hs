@@ -30,6 +30,7 @@ executable day1-exe
   build-depends:       base
                      , day1
                      , data-clist >= 0.1.2.0
+                     , lens >= 4.15.4
   default-language:    Haskell2010
 
 test-suite day1-test
