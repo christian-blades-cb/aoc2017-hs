@@ -1,16 +1,190 @@
 extern crate itertools;
+#[macro_use]
+extern crate nom;
 
 use std::fs::File;
 use std::io::Read;
 use std::string::String;
+use nom::{digit, alpha, IResult, line_ending};
+use std::str::{FromStr, from_utf8};
+use std::error::Error;
+use std::fmt;
+use std::io::Write;
+
+#[derive(Debug)]
+struct SomeKindOfError;
+impl Error for SomeKindOfError {
+    fn description(&self) -> &str {
+        "something went wrong"
+    }
+}
+impl fmt::Display for SomeKindOfError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "something's gone wrong")
+    }
+}
 
 fn main() {
     day5pt2("../day5-input");
 
     day6pt1("../day6-input");
     day6pt2("../day6-input");
+    day7pt1("../day7-input");
 }
 
+fn day7pt1<'a>(filename: &'a str) {
+    let mut fd = File::open(filename).expect("unable to open input file");
+    let mut body = Vec::new();
+    fd.read_to_end(&mut body).expect("unable to read input");
+    let towers = parseday7(&body).unwrap();
+    // std::io::stderr().write(&body).unwrap();
+    // println!("{:?}", body);
+
+    let mut owned = Vec::new();
+    let mut names = Vec::new();
+
+
+    for x in towers.iter() {
+        if x.name == "idfyy" {
+            println!("idfyy -> {:?}", x.holding);
+        }
+        names.push(x.to_owned().name);
+    }
+
+    for x in towers.iter() {
+        if let Some(owns) = x.to_owned().holding {
+            owned.append(&mut owns.to_owned());
+        };
+    }
+
+    let fin: Vec<String> = names
+        .iter()
+        .filter_map(|x| if owned.iter().all(|y| y != x) {
+            Some(x.to_owned())
+        } else {
+            None
+        })
+        .collect();
+
+    if fin.len() != 1 {
+        println!("size {}, fin: {:?}", fin.len(), fin);
+        panic!("fin size is wrong");
+    }
+
+    println!("base: {}", fin[0]);
+}
+
+fn find_base(stack_list: Vec<StackPgm>) -> Result<String, SomeKindOfError> {
+    let mut owned = Vec::new();
+    let mut names = Vec::new();
+
+
+    for x in stack_list.iter() {
+        if x.name == "idfyy" {
+            println!("idfyy -> {:?}", x.holding);
+        }
+        names.push(x.to_owned().name);
+    }
+
+    for x in stack_list.iter() {
+        if let Some(owns) = x.to_owned().holding {
+            owned.append(&mut owns.to_owned());
+        };
+    }
+
+    let fin: Vec<String> = names
+        .iter()
+        .filter_map(|x| if owned.iter().all(|y| y != x) {
+            Some(x.to_owned())
+        } else {
+            None
+        })
+        .collect();
+
+    if fin.len() != 1 {
+        println!("size {}, fin: {:?}", fin.len(), fin);
+        panic!("fin size is wrong");
+    }
+
+    Ok(fin[0].to_owned())
+}
+
+fn parseday7(body: &[u8]) -> Option<Vec<StackPgm>> {
+    let mut towers = Vec::new();
+    let mut rest = body;
+    loop {
+        if let IResult::Done(r, tow) = pgm_stack(rest) {
+            rest = r;
+            towers.push(tow);
+        } else {
+            break;
+        }
+    }
+
+    if towers.len() == 0 {
+        None
+    } else {
+        Some(towers)
+    }
+}
+// named!(parseday7<&[u8], Vec<StackPgm>>,
+//        many1!(pgm_stack));
+
+named!(weight<&[u8], usize>,
+       ws!(
+           delimited!(
+               tag!("(") ,
+               map_res!(map_res!(digit, from_utf8), FromStr::from_str) ,
+               tag!(")")
+           )));
+
+named!(pgmname<&[u8], &str>,
+       map_res!(
+           ws!(alpha),
+           from_utf8
+       ));
+
+named!(holding<&[u8], Option<Vec<&str>>>,
+       opt!(
+           do_parse!(
+               ws!(tag!("->")) >>
+               pgms: separated_list!(
+                   tag!(",") ,
+                   pgmname) >>
+               (pgms)                   
+           )));
+
+named!(pgm_stack<&[u8], StackPgm>,
+       map_res!(
+           do_parse!(
+               name: pgmname >>
+               wgt: weight >>
+               held: holding >>                  
+               (name, wgt, held)) ,
+           |x: (&str, usize, Option<Vec<&str>>)| Ok::<StackPgm, SomeKindOfError>(StackPgm::new(x.0, x.1, x.2))
+       ));
+
+#[derive(Clone, Debug)]
+struct StackPgm {
+    name: String,
+    weight: usize,
+    holding: Option<Vec<String>>,
+}
+
+impl StackPgm {
+    fn new(name: &str, weight: usize, holding: Option<Vec<&str>>) -> StackPgm {
+        let n = String::from(name);
+        let h = holding.map(|hv| hv.iter().map(|&x| String::from(x)).collect());
+
+        StackPgm {
+            name: n,
+            weight: weight,
+            holding: h,
+        }
+    }
+}
+
+// day5
 fn day5pt2(filename: &str) {
     let mut contents = File::open(filename).expect("unable to open input file");
     let mut buf = String::new();
@@ -42,6 +216,8 @@ fn jump(stack: &mut Vec<isize>) -> usize {
 
     return steps;
 }
+
+// day6
 
 fn day6pt1(filename: &str) {
     let mut contents = File::open(filename).expect("unable to open input file");

@@ -5,3 +5,4 @@ authors = ["Christian Blades <cblades@pindrop.com>"]
 
 [dependencies]
 itertools = "*"
+nom = "*"
