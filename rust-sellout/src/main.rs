@@ -1,15 +1,17 @@
 extern crate itertools;
 #[macro_use]
 extern crate nom;
+extern crate indextree;
 
 use std::fs::File;
 use std::io::Read;
 use std::string::String;
-use nom::{digit, alpha, IResult, line_ending};
+use nom::{digit, alpha, IResult};
 use std::str::{FromStr, from_utf8};
 use std::error::Error;
 use std::fmt;
-use std::io::Write;
+use indextree::{Arena, NodeId};
+use std::ops::IndexMut;
 
 #[derive(Debug)]
 struct SomeKindOfError;
@@ -30,59 +32,69 @@ fn main() {
     day6pt1("../day6-input");
     day6pt2("../day6-input");
     day7pt1("../day7-input");
+    day7pt2("../day7-input");
 }
 
-fn day7pt1<'a>(filename: &'a str) {
+fn day7pt1(filename: &str) {
     let mut fd = File::open(filename).expect("unable to open input file");
     let mut body = Vec::new();
     fd.read_to_end(&mut body).expect("unable to read input");
     let towers = parseday7(&body).unwrap();
-    // std::io::stderr().write(&body).unwrap();
-    // println!("{:?}", body);
 
-    let mut owned = Vec::new();
-    let mut names = Vec::new();
+    let base = find_base(&towers).unwrap();
 
-
-    for x in towers.iter() {
-        if x.name == "idfyy" {
-            println!("idfyy -> {:?}", x.holding);
-        }
-        names.push(x.to_owned().name);
-    }
-
-    for x in towers.iter() {
-        if let Some(owns) = x.to_owned().holding {
-            owned.append(&mut owns.to_owned());
-        };
-    }
-
-    let fin: Vec<String> = names
-        .iter()
-        .filter_map(|x| if owned.iter().all(|y| y != x) {
-            Some(x.to_owned())
-        } else {
-            None
-        })
-        .collect();
-
-    if fin.len() != 1 {
-        println!("size {}, fin: {:?}", fin.len(), fin);
-        panic!("fin size is wrong");
-    }
-
-    println!("base: {}", fin[0]);
+    println!("base: {}", base);
 }
 
-fn find_base(stack_list: Vec<StackPgm>) -> Result<String, SomeKindOfError> {
+fn day7pt2(filename: &str) {
+    let mut fd = File::open(filename).expect("unable to open input file");
+    let mut body = Vec::new();
+    fd.read_to_end(&mut body).expect("unable to read input");
+    let mut towers = parseday7(&body).unwrap();
+
+    let basename = find_base(&towers).unwrap();
+    let mut arena = Arena::new();
+    let root_obj = pop_by_name(&mut towers, &basename).expect("unable to retrieve root from pool");
+
+    let root = arena.new_node(root_obj);
+    populate_tree(&mut arena, root, &mut towers);
+    if towers.len() != 0 {
+        panic!("wut?");
+    }
+
+
+}
+
+fn pop_by_name(objpool: &mut Vec<StackPgm>, name: &String) -> Option<StackPgm> {
+    let (elem_i, _) = objpool
+        .iter()
+        .enumerate()
+        .filter(|&(_, ref x)| x.name == *name)
+        .next()?;
+    Some(objpool.swap_remove(elem_i))
+}
+
+fn populate_tree(arena: &mut Arena<StackPgm>, root: NodeId, objpool: &mut Vec<StackPgm>) {
+    let held = arena[root].data.holding.to_owned();
+    if let Some(held) = held {
+        for elem_name in held.iter() {
+            let elem = pop_by_name(objpool, &elem_name).unwrap();
+            let elem_nodeid = arena.new_node(elem);
+            populate_tree(arena, elem_nodeid, objpool);
+        }
+    }
+}
+
+
+fn find_base(stack_list: &Vec<StackPgm>) -> Result<String, SomeKindOfError> {
     let mut owned = Vec::new();
     let mut names = Vec::new();
 
 
     for x in stack_list.iter() {
-        if x.name == "idfyy" {
-            println!("idfyy -> {:?}", x.holding);
-        }
+        // if x.name == "idfyy" {
+        //     println!("idfyy -> {:?}", x.holding);
+        // }
         names.push(x.to_owned().name);
     }
 
@@ -103,7 +115,7 @@ fn find_base(stack_list: Vec<StackPgm>) -> Result<String, SomeKindOfError> {
 
     if fin.len() != 1 {
         println!("size {}, fin: {:?}", fin.len(), fin);
-        panic!("fin size is wrong");
+        return Err(SomeKindOfError);
     }
 
     Ok(fin[0].to_owned())
