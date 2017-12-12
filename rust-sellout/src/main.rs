@@ -5,11 +5,11 @@ extern crate nom;
 use std::fs::File;
 use std::io::Read;
 use std::string::String;
-use nom::{digit, alpha, IResult, line_ending};
+use nom::{digit, alpha, IResult};
 use std::str::{FromStr, from_utf8};
 use std::error::Error;
 use std::fmt;
-use std::io::Write;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug)]
 struct SomeKindOfError;
@@ -30,9 +30,76 @@ fn main() {
     day6pt1("../day6-input");
     day6pt2("../day6-input");
     day7pt1("../day7-input");
+
+    day12pt1("../day12-input");
 }
 
-fn day7pt1<'a>(filename: &'a str) {
+fn day12pt1(filename: &str) {
+    let mut fd = File::open(filename).expect("unable to open input file");
+    let mut body = Vec::new();
+    fd.read_to_end(&mut body).expect("unable to read input");
+    let connections = d12parsefile(&body);
+    let conn_map: HashMap<usize, Vec<usize>> =
+        connections.iter().cloned().map(|(a, b)| (a, b)).collect();
+
+    let mut zero_grp: HashSet<usize> = conn_map
+        .get(&0)
+        .unwrap()
+        .to_owned()
+        .iter()
+        .map(|&x| x)
+        .collect();
+    let mut working = conn_map.get(&0).unwrap().to_owned();
+
+    while working.len() != 0 {
+        let w = working.pop().unwrap();
+        let c = conn_map.get(&w).unwrap();
+        for &x in c.iter() {
+            if zero_grp.insert(x) {
+                working.push(x);
+            }
+        }
+    }
+
+    println!("day12pt1: {}", zero_grp.len());
+}
+
+fn d12parsefile(body: &[u8]) -> Vec<(usize, Vec<usize>)> {
+    let mut out = Vec::new();
+    let mut rest = body;
+    loop {
+        let result = d12parser(rest);
+        if let IResult::Done(r, ssink) = result {
+            rest = r;
+            out.push(ssink);
+        } else {
+            break;
+        }
+    }
+
+    out
+}
+
+named!(d12parser<&[u8], (usize, Vec<usize>)>,
+       do_parse!(
+           src: d12src >>
+               tag!("<->") >>
+               sinks: separated_list!(
+                   tag!(","),
+                   d12src) >>
+               (src, sinks)
+    ));
+
+named!(d12src<&[u8], usize>,
+       map_res!(
+           map_res!(
+               ws!(digit),
+               from_utf8
+           ),
+           usize::from_str
+       ));
+
+fn day7pt1(filename: &str) {
     let mut fd = File::open(filename).expect("unable to open input file");
     let mut body = Vec::new();
     fd.read_to_end(&mut body).expect("unable to read input");
@@ -45,9 +112,9 @@ fn day7pt1<'a>(filename: &'a str) {
 
 
     for x in towers.iter() {
-        if x.name == "idfyy" {
-            println!("idfyy -> {:?}", x.holding);
-        }
+        // if x.name == "idfyy" {
+        //     println!("idfyy -> {:?}", x.holding);
+        // }
         names.push(x.to_owned().name);
     }
 
@@ -71,7 +138,7 @@ fn day7pt1<'a>(filename: &'a str) {
         panic!("fin size is wrong");
     }
 
-    println!("base: {}", fin[0]);
+    println!("day7pt1: {}", fin[0]);
 }
 
 fn find_base(stack_list: Vec<StackPgm>) -> Result<String, SomeKindOfError> {
@@ -80,9 +147,9 @@ fn find_base(stack_list: Vec<StackPgm>) -> Result<String, SomeKindOfError> {
 
 
     for x in stack_list.iter() {
-        if x.name == "idfyy" {
-            println!("idfyy -> {:?}", x.holding);
-        }
+        // if x.name == "idfyy" {
+        //     println!("idfyy -> {:?}", x.holding);
+        // }
         names.push(x.to_owned().name);
     }
 
@@ -234,7 +301,7 @@ fn day6pt1(filename: &str) {
 }
 
 fn reallocations(banks: &mut Vec<usize>) -> usize {
-    println!("banks {:?}", banks);
+    // println!("banks {:?}", banks);
 
     let mut seen: Vec<Vec<usize>> = vec![banks.clone()];
     let mut count = 0;
@@ -285,7 +352,7 @@ fn day6pt2(filename: &str) {
 }
 
 fn cycle_size(banks: &mut Vec<usize>) -> usize {
-    println!("banks {:?}", banks);
+    // println!("banks {:?}", banks);
 
     let mut seen: Vec<Vec<usize>> = vec![banks.clone()];
     let mut count = 0;
