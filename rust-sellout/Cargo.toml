@@ -6,3 +6,4 @@ authors = ["Christian Blades <cblades@pindrop.com>"]
 [dependencies]
 itertools = "*"
 nom = "*"
+modulo = "0.1.2"

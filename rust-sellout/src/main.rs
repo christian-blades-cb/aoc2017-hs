@@ -1,6 +1,7 @@
 extern crate itertools;
 #[macro_use]
 extern crate nom;
+extern crate modulo;
 
 use std::fs::File;
 use std::io::Read;
@@ -10,6 +11,7 @@ use std::str::{FromStr, from_utf8};
 use std::error::Error;
 use std::fmt;
 use std::collections::{HashMap, HashSet};
+use modulo::Mod;
 
 #[derive(Debug)]
 struct SomeKindOfError;
@@ -32,6 +34,100 @@ fn main() {
     day7pt1("../day7-input");
 
     day12pt1("../day12-input");
+
+    day13pt1("../day13-input");
+    day13pt2("../day13-input");
+}
+
+fn day13pt1(filename: &str) {
+    let mut fd = File::open(filename).expect("unable to open input file");
+    let mut buf = String::new();
+    fd.read_to_string(&mut buf).expect("unable to read file");
+    let layers: Vec<(usize, usize)> = buf.lines()
+        .map(|line| {
+            let mut pieces = line.split(':');
+            let layer = pieces.next().unwrap().trim().parse().unwrap();
+            let depth = pieces.next().unwrap().trim().parse().unwrap();
+            (layer, depth)
+        })
+        .collect();
+
+    let mut severity = 0;
+    for &(depth, range) in layers.iter() {
+        let position = match depth {
+            0 => 0,
+            x => x.modulo(((range - 1) * 2)),
+        };
+        if position == 0 {
+            severity += depth * range;
+        }
+        // println!(
+        //     "depth {} range {} -- position {} -- severity {}",
+        //     depth,
+        //     range,
+        //     position,
+        //     severity
+        // );
+    }
+
+    // 372 -- too low
+    println!("day13pt1: {}", severity);
+}
+
+fn day13pt2(filename: &str) {
+    let mut fd = File::open(filename).expect("unable to open input file");
+    let mut buf = String::new();
+    fd.read_to_string(&mut buf).expect("unable to read file");
+    let layers: Vec<(usize, usize)> = buf.lines()
+        .map(|line| {
+            let mut pieces = line.split(':');
+            let layer = pieces.next().unwrap().trim().parse().unwrap();
+            let depth = pieces.next().unwrap().trim().parse().unwrap();
+            (layer, depth)
+        })
+        .collect();
+
+    for delay in 0.. {
+        let caught = {
+            layers.iter().any(|&(depth, range)| {
+                let position = match depth + delay {
+                    0 => 0,
+                    x => x.modulo(((range - 1) * 2)),
+                };
+                position == 0
+            })
+        };
+        if !caught {
+            println!("day13pt2: {}", delay);
+            break;
+        }
+    }
+}
+
+fn day12pt2(filename: &str) {
+    let mut fd = File::open(filename).expect("unable to open input file");
+    let mut body = Vec::new();
+    fd.read_to_end(&mut body).expect("unable to read input");
+    let connections = d12parsefile(&body);
+    let conn_map: HashMap<usize, Vec<usize>> =
+        connections.iter().cloned().map(|(a, b)| (a, b)).collect();
+
+    let mut pool: HashSet<usize> = connections.iter().cloned().map(|(a, _)| a).collect();
+
+    while pool.len() != 0 {
+        let root = pool.iter().next().unwrap();
+
+        let mut this_grp: HashSet<usize> = HashSet::new();
+        this_grp.insert(*root);
+
+        let mut working = conn_map.get(root).unwrap().to_owned();
+        for x in working.iter() {
+            this_grp.insert(*x);
+        }
+
+
+    }
+
 }
 
 fn day12pt1(filename: &str) {
