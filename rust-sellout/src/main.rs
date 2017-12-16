@@ -12,6 +12,7 @@ use std::error::Error;
 use std::fmt;
 use std::collections::{HashMap, HashSet};
 use modulo::Mod;
+use std::cmp::min;
 
 #[derive(Debug)]
 struct SomeKindOfError;
@@ -37,6 +38,26 @@ fn main() {
 
     day13pt1("../day13-input");
     day13pt2("../day13-input");
+
+    let day10input = vec![
+        31,
+        2,
+        85,
+        1,
+        80,
+        109,
+        35,
+        63,
+        98,
+        255,
+        0,
+        13,
+        105,
+        254,
+        128,
+        33,
+    ];
+    day10pt1(&day10input);
 }
 
 fn day13pt1(filename: &str) {
@@ -194,6 +215,43 @@ named!(d12src<&[u8], usize>,
            ),
            usize::from_str
        ));
+
+fn day10pt1(input: &[usize]) {
+    println!("{:?}", input);
+    let example_in = vec![3,4,1,5,0];
+    let ex_out = knot_hash(&example_in, 5);
+    println!("day10example: {:?} {}", ex_out, ex_out[0] * ex_out[1]);
+    // let hash = knot_hash(input, 256);
+    // println!("day10pt1: {} {:?}", hash[0] * hash[1], hash);
+}
+
+fn knot_hash(input: &[usize], size: usize) -> Vec<usize> {
+    let mut hash_space: Vec<usize> = (0..size).collect();
+
+    let mut i = 0;
+    for (skip, &len) in input.iter().enumerate() {
+        println!("len {}", len);
+        if len > 0 {
+            reverse_circ_range(&mut hash_space, i, len);
+        }
+        i = (i + len + skip) % (input.len() + 1);
+    }
+
+    hash_space
+}
+
+fn reverse_circ_range(v: &mut Vec<usize>, from: usize, len: usize) {
+    let mut work = Vec::new();
+    for &x in v.iter().cycle().skip(from).take(len) {
+        work.push(x.to_owned());
+    }
+
+    for (i, x) in work.iter().rev().enumerate() {
+        let index = (from + i) % (v.len());
+        println!("v[{}] = {}", index, x);
+        v[index] = *x;
+    }
+}
 
 fn day7pt1(filename: &str) {
     let mut fd = File::open(filename).expect("unable to open input file");
